@@ -1,0 +1,299 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Proxmox Cluster Status</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #0f0f0f;
+            color: white;
+            padding: 2rem;
+        }
+        h1 {
+            color: orange;
+            margin-bottom: 1rem;
+        }
+        .node-card {
+            background-color: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 0 10px rgba(255, 165, 0, 0.3);
+        }
+        .metric {
+            font-size: 1.1rem;
+            margin: 0.3rem 0;
+        }
+        .guest-list {
+            margin-top: 1rem;
+        }
+        .guest-item {
+            background-color: #222;
+            border-radius: 0.5rem;
+            padding: 0.75rem;
+            margin-bottom: 0.5rem;
+        }
+        .guest-status {
+            font-weight: bold;
+        }
+        .status-running {
+            color: limegreen;
+        }
+        .status-stopped {
+            color: crimson;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js">
+
+function toggleChart(node, view) {
+    const liveCanvas = document.getElementById(`chart-${node}`);
+    const historyCanvas = document.getElementById(`history-${node}`);
+    const liveBtn = document.getElementById(`btn-live-${node}`);
+    const histBtn = document.getElementById(`btn-hist-${node}`);
+
+    if (!liveCanvas || !historyCanvas || !liveBtn || !histBtn) return;
+
+    if (view === "live") {
+        liveCanvas.classList.remove("d-none");
+        liveCanvas.classList.add("d-block");
+        historyCanvas.classList.add("d-none");
+        historyCanvas.classList.remove("d-block");
+        liveBtn.classList.add("btn-warning");
+        liveBtn.classList.remove("btn-outline-light");
+        histBtn.classList.remove("btn-warning");
+        histBtn.classList.add("btn-outline-light");
+    } else {
+        historyCanvas.classList.remove("d-none");
+        historyCanvas.classList.add("d-block");
+        liveCanvas.classList.add("d-none");
+        liveCanvas.classList.remove("d-block");
+        histBtn.classList.add("btn-warning");
+        histBtn.classList.remove("btn-outline-light");
+        liveBtn.classList.remove("btn-warning");
+        liveBtn.classList.add("btn-outline-light");
+    }
+}
+
+</script>
+</head>
+<body>
+    <h1>Proxmox Cluster Status</h1>
+
+    <div class="mb-4 p-3 rounded" style="background-color: #1a1a1a; border-left: 5px solid orange;">
+        <h5 style="color: orange;">Cluster Summary</h5>
+        <p class="metric">Nodes: {{ summary.nodes }}</p>
+        <p class="metric">Guests: {{ summary.guests }}</p>
+        <p class="metric">Avg CPU Usage: 
+            <span style="color: {{ 'crimson' if summary.cpu > 80 else 'white' }}">{{ summary.cpu }}%</span>
+        </p>
+        <p class="metric">Memory Usage: 
+            <span style="color: {{ 'crimson' if summary.mem > 80 else 'white' }}">{{ summary.mem }}%</span>
+        </p>
+    </div>
+
+    <div class="mb-5">
+        <canvas id="clusterChart" height="100"></canvas>
+    </div>    
+
+    <div class="container">
+        <div class="row">
+            {% for node in nodes | sort(attribute="name") %}
+                <div class="col-md-6 col-lg-3">
+                    <div class="node-card">
+                        <h4>{{ node.name }}</h4>
+                        <p class="metric"><strong>CPU Usage:</strong> {{ node.cpu }}%</p>
+                        <p class="metric"><strong>Memory Usage:</strong> {{ node.mem }}%</p>
+                        <p class="metric"><strong>Uptime:</strong> {{ node.uptime }}</p>
+
+                        
+    <div class="btn-group mb-2" role="group">
+        <button type="button" class="btn btn-sm btn-outline-light" id="btn-live-{{ node.name }}" class="btn btn-sm btn-warning" onclick="toggleChart('{{ node.name }}', 'live')">Live</button>
+        <button type="button" class="btn btn-sm btn-outline-warning" id="btn-hist-{{ node.name }}" class="btn btn-sm btn-outline-light" onclick="toggleChart('{{ node.name }}', 'history')">History</button>
+    </div>
+
+    <div id="chart-container-{{ node.name }}">
+        <canvas id="chart-{{ node.name }}"  class="chart-live d-block"></canvas>
+        <canvas id="history-{{ node.name }}"  class="chart-history d-none w-100" style="min-height: 200px;"></canvas>
+    </div>
+    
+
+                        
+
+                        {% if node.guests %}
+                            <div class="guest-list">
+                                <h6 style="color: orange;">Guests:</h6>
+                                {% for guest in node.guests %}
+                                    <div class="guest-item">
+                                        <strong>
+                                            {% if guest.type == 'VM' %}
+                                                💻 VM {{ guest.id }}
+                                            {% else %}
+                                                📦 LXC {{ guest.id }}
+                                            {% endif %}
+                                        </strong>: {{ guest.name }}<br>
+                                        <span class="guest-status">
+                                            {% if guest.status == 'running' %}
+                                                🟢 Running
+                                            {% else %}
+                                                🔴 {{ guest.status|capitalize }}
+                                            {% endif %}
+                                        </span><br>
+                                        CPU: <span style="color: {{ 'crimson' if guest.cpu > 80 else 'white' }}">{{ guest.cpu }}%</span> —
+                                        Mem: <span style="color: {{ 'crimson' if guest.mem > 80 else 'white' }}">{{ guest.mem }}%</span>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <script>
+        const labels = [], cpuData = [], memData = [];
+        const ctx = document.getElementById('clusterChart').getContext('2d');
+        const clusterChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    { label: 'CPU Usage (%)', data: cpuData, borderColor: 'orange', fill: false, tension: 0.3 },
+                    { label: 'Memory Usage (%)', data: memData, borderColor: 'white', fill: false, tension: 0.3 }
+                ]
+            },
+            options: {
+                layout: { padding: { top: 10, bottom: 0 } },
+                responsive: true,
+                plugins: { legend: { labels: { color: 'white' } } },
+                scales: {
+                    x: { ticks: { color: 'white' } },
+                    y: { beginAtZero: true, max: 100, ticks: { color: 'white' } }
+                }
+            }
+        });
+
+        async function fetchClusterStats() {
+            const response = await fetch('/api/summary');
+            const data = await response.json();
+            const timestamp = new Date().toLocaleTimeString();
+            labels.push(timestamp); cpuData.push(data.cpu); memData.push(data.mem);
+            if (labels.length > 30) { labels.shift(); cpuData.shift(); memData.shift(); }
+            clusterChart.update();
+        }
+        fetchClusterStats(); setInterval(fetchClusterStats, 10000);
+
+        const nodeCharts = {}, nodeData = {}, historyCharts = {};
+
+        async function fetchNodeMetrics() {
+            const res = await fetch('/api/nodes');
+            const data = await res.json();
+            const timestamp = new Date().toLocaleTimeString();
+
+            for (const [node, stats] of Object.entries(data)) {
+                if (!nodeData[node]) nodeData[node] = { labels: [], cpu: [], mem: [] };
+                nodeData[node].labels.push(timestamp);
+                nodeData[node].cpu.push(stats.cpu);
+                nodeData[node].mem.push(stats.mem);
+                if (nodeData[node].labels.length > 30) {
+                    nodeData[node].labels.shift();
+                    nodeData[node].cpu.shift();
+                    nodeData[node].mem.shift();
+                }
+                if (!nodeCharts[node]) {
+                    const ctx = document.getElementById(`chart-${node}`).getContext('2d');
+                    nodeCharts[node] = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: nodeData[node].labels,
+                            datasets: [
+                                { label: 'CPU (%)', data: nodeData[node].cpu, borderColor: 'orange', fill: false, tension: 0.3 },
+                                { label: 'Memory (%)', data: nodeData[node].mem, borderColor: 'white', fill: false, tension: 0.3 }
+                            ]
+                        },
+                        options: {
+                layout: { padding: { top: 10, bottom: 0 } },
+                            responsive: true,
+                            plugins: { legend: { labels: { color: 'white' } } },
+                            scales: {
+                                x: { ticks: { color: 'white' } },
+                                y: { beginAtZero: true, max: 100, ticks: { color: 'white' } }
+                            }
+                        }
+                    });
+                } else {
+                    nodeCharts[node].update();
+                }
+            }
+        }
+        fetchNodeMetrics(); setInterval(fetchNodeMetrics, 10000);
+
+        async function fetchNodeHistory(node) {
+            const res = await fetch(`/api/history/${node}`);
+            const data = await res.json();
+            const labels = data.map(entry => entry.timestamp.split(" ")[1].slice(0, 5));
+            const cpu = data.map(entry => entry.cpu);
+            const mem = data.map(entry => entry.mem);
+            const ctx = document.getElementById(`history-${node}`).getContext('2d');
+            historyCharts[node] = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        { label: 'CPU (%)', data: cpu, borderColor: 'orange', fill: false, tension: 0.3 },
+                        { label: 'Memory (%)', data: mem, borderColor: 'white', fill: false, tension: 0.3 }
+                    ]
+                },
+                options: {
+                layout: { padding: { top: 10, bottom: 0 } },
+                    responsive: true,
+                    plugins: { legend: { labels: { color: 'white' } } },
+                    scales: {
+                        x: { ticks: { color: 'white' } },
+                        y: { beginAtZero: true, max: 100, ticks: { color: 'white' } }
+                    }
+                }
+            });
+        }
+
+        window.addEventListener("DOMContentLoaded", () => {
+            const nodeIds = {{ nodes | tojson | safe }};
+            nodeIds.forEach(n => fetchNodeHistory(n.name));
+        });
+    
+
+function toggleChart(node, view) {
+    const liveCanvas = document.getElementById(`chart-${node}`);
+    const historyCanvas = document.getElementById(`history-${node}`);
+    const liveBtn = document.getElementById(`btn-live-${node}`);
+    const histBtn = document.getElementById(`btn-hist-${node}`);
+
+    if (!liveCanvas || !historyCanvas || !liveBtn || !histBtn) return;
+
+    if (view === "live") {
+        liveCanvas.classList.remove("d-none");
+        liveCanvas.classList.add("d-block");
+        historyCanvas.classList.add("d-none");
+        historyCanvas.classList.remove("d-block");
+        liveBtn.classList.add("btn-warning");
+        liveBtn.classList.remove("btn-outline-light");
+        histBtn.classList.remove("btn-warning");
+        histBtn.classList.add("btn-outline-light");
+    } else {
+        historyCanvas.classList.remove("d-none");
+        historyCanvas.classList.add("d-block");
+        liveCanvas.classList.add("d-none");
+        liveCanvas.classList.remove("d-block");
+        histBtn.classList.add("btn-warning");
+        histBtn.classList.remove("btn-outline-light");
+        liveBtn.classList.remove("btn-warning");
+        liveBtn.classList.add("btn-outline-light");
+    }
+}
+
+</script>
+</body>
+</html>
