@@ -6,9 +6,9 @@ from datetime import datetime, timedelta
 app = Flask(__name__)
 
 # Proxmox Connection
-PROXMOX_HOST = "10.190.0.10"
-API_USER = "api@pve"
-API_TOKEN = "db8200f7-feb1-4a40-b4f8-b763012b2e32"
+PROXMOX_HOST = ""
+API_USER = ""
+API_TOKEN = ""
 VERIFY_SSL = False              # Using Self-Signed Cert.
 
 def format_uptime(seconds):
