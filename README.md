@@ -59,10 +59,6 @@ A sleek, modern web dashboard for monitoring Proxmox VE clusters using the Proxm
 - `templates/index.html`: Dashboard UI with dynamic graphs
 - `/api/nodes`, `/api/summary`, `/api/history/<node>`: JSON endpoints
 
-## 📸 Screenshots
-
-![Dashboard Screenshot](screenshots/dashboard.png)
-
 ## 📜 License
 
 MIT License — free to use, modify, and deploy.
