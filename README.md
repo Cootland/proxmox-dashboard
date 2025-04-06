@@ -1,15 +1,5 @@
 # Proxmox Cluster Dashboard
 
-A sleek, modern web dashboard for monitoring Proxmox VE clusters using the Proxmox API. Built with Flask, Chart.js, and SQLite.
-
-## 🚀 Features
-
-- 🔐 Secure API token-based access to Proxmox
-- 📊 Live per-node CPU and memory metrics
-- 💾 Metrics logged to local SQLite DB for long-term analysis
-- 🧭 Fully responsive UI (Bootstrap 5)
-- 🟧 Light/Dark chart themes with tab toggles for Live/History
-
 ## 🛠 Requirements
 
 - Python 3.10+
