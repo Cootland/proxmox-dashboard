@@ -47,7 +47,3 @@
 - `db.py`: SQLite metric logging
 - `templates/index.html`: Dashboard UI with dynamic graphs
 - `/api/nodes`, `/api/summary`, `/api/history/<node>`: JSON endpoints
-
-## 📜 License
-
-MIT License — free to use, modify, and deploy.
