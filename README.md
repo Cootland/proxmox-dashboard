@@ -5,7 +5,7 @@
 - Python 3.10+
 - Proxmox API Token with audit permissions
 - Flask
-- Chart.js (via CDN)
+- Chart.js
 - SQLite3 (bundled with Python)
 
 ## 📦 Setup
