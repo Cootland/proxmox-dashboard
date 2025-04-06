@@ -6,7 +6,6 @@ A sleek, modern web dashboard for monitoring Proxmox VE clusters using the Proxm
 
 - 🔐 Secure API token-based access to Proxmox
 - 📊 Live per-node CPU and memory metrics
-- 🕰 Historical trend graphs (1h / 6h / 24h range)
 - 💾 Metrics logged to local SQLite DB for long-term analysis
 - 🧭 Fully responsive UI (Bootstrap 5)
 - 🟧 Light/Dark chart themes with tab toggles for Live/History
