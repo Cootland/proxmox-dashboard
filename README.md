@@ -23,7 +23,7 @@ A sleek, modern web dashboard for monitoring Proxmox VE clusters using the Proxm
 
 1. Clone the repo:
    ```bash
-   git clone https://github.com/yourusername/proxmox-dashboard.git
+   git clone https://github.com/cootland/proxmox-dashboard.git
    cd proxmox-dashboard
    ```
 
